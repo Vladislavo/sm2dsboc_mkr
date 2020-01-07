@@ -59,9 +59,11 @@ void setup() {
 void loop() {
     read_sensors_data(&sensors_data);
 
-    send_data(&sensors_data, BUS_PROTOCOL_TRANSMIT_RETRIES);
+    while (!send_data(&sensors_data, BUS_PROTOCOL_TRANSMIT_RETRIES)) {
+        delay(random(0, 5000));
+    }
 
-    sleep_mcu(DATA_SEND_PERIOD + (random(0, 5000)));
+    sleep_mcu(DATA_SEND_PERIOD + random(0, 5000));
 }
 
 void read_sensors_data(sensors_data_t *sensors_data) {
@@ -117,7 +119,7 @@ uint8_t send_data(const sensors_data_t *sensors_data, const int8_t retries) {
             retr++;
         }
 
-    } while(!ret && retries < retries);
+    } while(!ret && retr < retries);
 
     return ret;
 }
