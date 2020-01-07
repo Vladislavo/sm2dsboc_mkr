@@ -37,7 +37,7 @@ Adafruit_ADS1115 ads;
 DHT dht(DHT22_PIN, DHT22);
 
 void read_sensors_data(sensors_data_t *sensors_data);
-uint8_t send_data(const sensors_data_t *sensors_data);
+uint8_t send_data(const sensors_data_t *sensors_data, const int8_t retries);
 
 uint8_t bus_protocol_serial_receive(uint8_t *data, uint8_t *data_length, uint32_t timeout);
 
@@ -59,7 +59,7 @@ void setup() {
 void loop() {
     read_sensors_data(&sensors_data);
 
-    send_data(&sensors_data);
+    send_data(&sensors_data, BUS_PROTOCOL_TRANSMIT_RETRIES);
 
     sleep_mcu(DATA_SEND_PERIOD + (random(0, 5000)));
 }
@@ -87,9 +87,9 @@ void read_sensors_data(sensors_data_t *sensors_data) {
     LOG_D(F("°C "));
 }
 
-uint8_t send_data(const sensors_data_t *sensors_data) {
+uint8_t send_data(const sensors_data_t *sensors_data, const int8_t retries) {
     uint8_t ret = 0;
-    uint8_t retries = 0;
+    uint8_t retr = 0;
 
     uint8_t packet_buffer[32] = {0};
     uint8_t packet_buffer_length = 0;
@@ -114,10 +114,10 @@ uint8_t send_data(const sensors_data_t *sensors_data) {
             LOG_D(F("ESP ACK"));
             ret = 1;
         } else {
-            retries++;
+            retr++;
         }
 
-    } while(!ret && retries < BUS_PROTOCOL_TRANSMIT_RETRIES);
+    } while(!ret && retries < retries);
 
     return ret;
 }
@@ -132,12 +132,6 @@ uint8_t bus_protocol_serial_receive(uint8_t *data, uint8_t *data_length, uint32_
             start_millis = millis();
         }
     }
-
-    // Serial.print(F("Received message: "));
-    // for (uint8_t i = 0; i < *data_length; i++) {
-    //     Serial.write(data[i]);
-    // }
-    // Serial.println();
 
     return *data_length;
 }
