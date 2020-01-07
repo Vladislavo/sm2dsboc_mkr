@@ -60,10 +60,10 @@ void loop() {
     read_sensors_data(&sensors_data);
 
     while (!send_data(&sensors_data, BUS_PROTOCOL_TRANSMIT_RETRIES)) {
-        delay(random(0, 5000));
+        delay(random(5000));
     }
 
-    sleep_mcu(DATA_SEND_PERIOD + random(0, 5000));
+    sleep_mcu(DATA_SEND_PERIOD + random(5000));
 }
 
 void read_sensors_data(sensors_data_t *sensors_data) {
