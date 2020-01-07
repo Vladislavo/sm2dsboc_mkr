@@ -57,11 +57,10 @@ void setup() {
 }
 
 void loop() {
-    read_sensors_data(&sensors_data);
-
-    while (!send_data(&sensors_data, BUS_PROTOCOL_TRANSMIT_RETRIES)) {
-        delay(random(5000));
-    }
+    do {
+        delay(random(5000)); 
+        read_sensors_data(&sensors_data);
+    } while (!send_data(&sensors_data, BUS_PROTOCOL_TRANSMIT_RETRIES));
 
     sleep_mcu(DATA_SEND_PERIOD + random(5000));
 }
@@ -71,16 +70,14 @@ void read_sensors_data(sensors_data_t *sensors_data) {
     sensors_data->soil_moisture_1 = ads.readADC_SingleEnded(1);
     sensors_data->soil_moisture_2 = ads.readADC_SingleEnded(2);
 
-    float h = dht.readHumidity();
-    float t = dht.readTemperature();
-
-    sensors_data->dht_temp = t;
-    sensors_data->dht_hum = h;
-
-    if (isnan(h) || isnan(t)) {
-      LOG_E(F("Failed to read from DHT sensor!\n"));
-      return;
-    }
+    do {
+        sensors_data->dht_temp = dht.readTemperature();
+        sensors_data->dht_hum = dht.readHumidity();
+        if (isnan(sensors_data->dht_temp) || isnan(sensors_data->dht_hum)) {
+            LOG_E(F("Failed to read from DHT sensor!\n"));
+            delay(100);
+        }
+    } while (isnan(sensors_data->dht_temp) || isnan(sensors_data->dht_hum));
 
     LOG_D(F("Humidity: "));
     LOG_D(h);
