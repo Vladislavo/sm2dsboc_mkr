@@ -8,6 +8,10 @@
 
 #include "bus_protocol/bus_protocol.h"
 
+#include "util/log/log.h"
+
+#define LOG_LEVEL                           LOG_LEVEL_NONE
+
 #define BUS_PROTOCOL_MAX_WAITING_TIME       300
 #define BUS_PROTOCOL_TRANSMIT_RETRIES       5
 #define BUS_PROTOCOL_MAX_DATA_SIZE          32
@@ -17,7 +21,7 @@
 #define BAUDRATE                            115200
 #define DHT22_PIN                           A1
 
-#define DATA_SEND_PERIOD                    2000
+#define DATA_SEND_PERIOD                    60000
 
 typedef struct {
     board_id_t board_id = BUS_PROTOCOL_BOARD_ID_MKR;
@@ -48,6 +52,8 @@ void setup() {
 
     ads.begin();
     dht.begin();
+
+    randomSeed(ads.readADC_SingleEnded(0));
 }
 
 void loop() {
@@ -55,7 +61,7 @@ void loop() {
 
     send_data(&sensors_data);
 
-    sleep_mcu(DATA_SEND_PERIOD + (rand() % 2000));
+    sleep_mcu(DATA_SEND_PERIOD + (random(0, 5000)));
 }
 
 void read_sensors_data(sensors_data_t *sensors_data) {
@@ -70,15 +76,15 @@ void read_sensors_data(sensors_data_t *sensors_data) {
     sensors_data->dht_hum = h;
 
     if (isnan(h) || isnan(t)) {
-      Serial.println(F("Failed to read from DHT sensor!"));
+      LOG_E(F("Failed to read from DHT sensor!\n"));
       return;
     }
 
-    Serial.print(F("Humidity: "));
-    Serial.print(h);
-    Serial.print(F("%  Temperature: "));
-    Serial.print(t);
-    Serial.print(F("°C "));
+    LOG_D(F("Humidity: "));
+    LOG_D(h);
+    LOG_D(F("%  Temperature: "));
+    LOG_D(t);
+    LOG_D(F("°C "));
 }
 
 uint8_t send_data(const sensors_data_t *sensors_data) {
@@ -99,13 +105,13 @@ uint8_t send_data(const sensors_data_t *sensors_data) {
         Serial1.write(packet_buffer, packet_buffer_length);
 
         //wait for ACK
-        if (bus_protocol_serial_receive(packet_buffer, &packet_buffer_length, 1000) &&
+        if (bus_protocol_serial_receive(packet_buffer, &packet_buffer_length, 3000) &&
             bus_protocol_packet_decode( packet_buffer, 
                                         packet_buffer_length, 
                                         packet_buffer, 
                                         &packet_buffer_length) == BUS_PROTOCOL_PACKET_TYPE_ACK) 
         {
-            Serial.println("ESP ACK");
+            LOG_D(F("ESP ACK"));
             ret = 1;
         } else {
             retries++;
